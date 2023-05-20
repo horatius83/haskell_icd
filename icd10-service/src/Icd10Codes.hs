@@ -3,7 +3,8 @@ module Icd10Codes
 , parseIcd10CmOrder
 ) where
 
-import Data.Text (Text, pack)
+import Data.Text (Text, pack, strip)
+import Text.Read (readMaybe)
 {-
 ICD-10-CM/PCS Order File Format
 Position    Length  Contents
@@ -29,7 +30,8 @@ parseIcd10CmOrder :: String -> Maybe Icd10CmPcsOrder
 parseIcd10CmOrder line = 
     let
         substring index count = take count $ drop index line
-        parsedOrderNumber = read $ substring 0 5 :: Maybe Int
+        parsedOrderNumber = readMaybe $ substring 0 5 
+        parse = strip . pack 
         parsedCode = substring 6 7 
         parsedHeader = substring 14 1 
         parsedIsHeader 
@@ -39,10 +41,10 @@ parseIcd10CmOrder line =
         parsedLongDescription = substring 77 (length line - 77) 
         makeIcd justOrderNumber = Icd10CmPcsOrder 
             { orderNumber = justOrderNumber
-            , code = pack parsedCode
+            , code = parse parsedCode
             , isHeader = parsedIsHeader
-            , shortDescription = pack parsedShortDescription
-            , longDescription = pack parsedLongDescription
+            , shortDescription = parse parsedShortDescription
+            , longDescription = parse parsedLongDescription
             }
     in
     fmap makeIcd parsedOrderNumber
