@@ -1,6 +1,7 @@
 module Icd10Codes   
 ( Icd10CmPcsOrder(..)
 , parseIcd10CmOrder
+, parseIcd10CmOrders
 ) where
 
 import Data.Text (Text, pack, strip)
@@ -48,3 +49,15 @@ parseIcd10CmOrder line =
             }
     in
     fmap makeIcd parsedOrderNumber
+
+parseIcd10CmOrders :: [String] -> Either String [Icd10CmPcsOrder]
+parseIcd10CmOrders textLines = 
+    let
+        parse ln = 
+            let 
+                order = parseIcd10CmOrder ln
+            in
+            case order of   Just (x) -> Right x
+                            Nothing -> Left $ "Error parsing: " ++ ln
+    in
+    sequence $ map parse textLines
