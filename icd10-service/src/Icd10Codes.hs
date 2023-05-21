@@ -2,10 +2,13 @@ module Icd10Codes
 ( Icd10CmPcsOrder(..)
 , parseIcd10CmOrder
 , parseIcd10CmOrders
+, getIcd10CodesFromFile
 ) where
 
 import Data.Text (Text, pack, strip)
 import Text.Read (readMaybe)
+import Database.SQLite.Simple.FromRow (FromRow(..))
+import Database.SQLite.Simple (ToRow(..), field)
 {-
 ICD-10-CM/PCS Order File Format
 Position    Length  Contents
@@ -26,6 +29,12 @@ data Icd10CmPcsOrder = Icd10CmPcsOrder
     , shortDescription :: Text
     , longDescription :: Text
     } deriving (Show, Eq)
+
+instance FromRow Icd10CmPcsOrder where
+    fromRow = Icd10CmPcsOrder <$> field <*> field <*> field <*> field <*> field
+
+instance ToRow Icd10CmPcsOrder where
+    toRow (Icd10CmPcsOrder orderNumber_ code_ isHeader_ shortDescription_ longDescription_) = toRow (orderNumber_, code_, isHeader_, shortDescription_, longDescription_)
 
 parseIcd10CmOrder :: String -> Maybe Icd10CmPcsOrder
 parseIcd10CmOrder line = 
@@ -61,3 +70,13 @@ parseIcd10CmOrders textLines =
                             Nothing -> Left $ "Error parsing: " ++ ln
     in
     sequence $ map parse textLines
+
+getIcd10CodesFromFile :: String -> IO (Either String [Icd10CmPcsOrder])
+getIcd10CodesFromFile file = do
+    contents <- readFile file
+    let
+        lines' = lines contents
+        codes = parseIcd10CmOrders lines'
+    return codes
+
+

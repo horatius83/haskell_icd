@@ -10,13 +10,6 @@ where
 import Icd10Codes (Icd10CmPcsOrder(..))
 import Database.SQLite.Simple (Query, Connection, execute, execute_, query, query_, Only(..), field, ToRow(..))
 import Database.SQLite.Simple.FromRow (FromRow(..))
-import Control.Applicative ((<$>), (<*>))
-
-instance FromRow Icd10CmPcsOrder where
-    fromRow = Icd10CmPcsOrder <$> field <*> field <*> field <*> field <*> field
-
-instance ToRow Icd10CmPcsOrder where
-    toRow (Icd10CmPcsOrder orderNumber code isHeader shortDescription longDescription) = toRow (orderNumber, code, isHeader, shortDescription, longDescription)
 
 -- I can't seem to query data for primitive types, so here's a wrapper around String
 data TableName = TableName String deriving (Show, Eq)
