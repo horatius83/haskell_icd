@@ -1,7 +1,7 @@
 module Main (main) where
 
-import Database.SQLite.Simple (open, close)
-import Icd10Queries (retrieveIfTableExists)
+import Database.SQLite.Simple (open, close, Connection)
+import Icd10Queries (retrieveIfTableExists, create, createTable)
 import Icd10Codes (getIcd10CodesFromFile)
 import Data.Either (isLeft, fromLeft, fromRight)
 
@@ -9,18 +9,27 @@ main :: IO ()
 main = do 
     putStrLn "Opening connection..."
     conn <- open "test.db"
-    putStrLn "Connection opened."
+    loadDatabase conn "./data/icd10/icd10cm_order_2023.txt"
+    putStrLn "Closing connection."
+    close conn
+
+loadDatabase :: Connection -> String -> IO ()
+loadDatabase conn textFileLocation = do
     haveTablesBeenCreated <- retrieveIfTableExists conn
     if not haveTablesBeenCreated then do
-        let textFile =  "./data/icd10/icd10cm_order_2023.txt"
-        putStrLn $ "Tables have not been created, reading codes from " ++ textFile
-        eitherIcd10Codes <- getIcd10CodesFromFile textFile
+        putStrLn $ "Tables have not been created, reading codes from " ++ textFileLocation
+        eitherIcd10Codes <- getIcd10CodesFromFile textFileLocation
         if isLeft eitherIcd10Codes then putStrLn (fromLeft "" eitherIcd10Codes)
         else do
             let
                 icd10Codes = fromRight [] eitherIcd10Codes
                 nIcd10Codes = show $ length icd10Codes
+                createIcd = create conn
             putStrLn $ nIcd10Codes ++ " codes found."
+            putStrLn "Creating table"
+            createTable conn
+            putStrLn "Inserting values"
+            mapM_ createIcd icd10Codes
+            putStrLn "Values inserted"
     else putStrLn "Tables have been created"
-    putStrLn "Closing connection."
-    close conn
+
