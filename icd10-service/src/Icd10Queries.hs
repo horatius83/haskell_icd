@@ -8,7 +8,7 @@ module Icd10Queries
 where
 
 import Icd10Codes (Icd10CmPcsOrder(..))
-import Database.SQLite.Simple (Query, Connection, execute, execute_, query, query_, Only(..), field, ToRow(..))
+import Database.SQLite.Simple (Query, Connection, execute, execute_, query, query_, Only(..), field)
 import Database.SQLite.Simple.FromRow (FromRow(..))
 
 -- I can't seem to query data for primitive types, so here's a wrapper around String
@@ -17,17 +17,19 @@ data TableName = TableName String deriving (Show, Eq)
 instance FromRow TableName where
     fromRow = TableName <$> field
 
+-- Ideally I'd like to define these queries in separate SQL files, since then you get syntax highlighting and also 
+-- multiline strings in Haskell do not bring me joy. The sqlite-simple library makes that very difficult, seamingly on 
+-- purpose, so I'm left with this ... approach.
+
 create :: Connection -> Icd10CmPcsOrder -> IO ()
 create conn icd = do
-    let 
-        q = "INSERT INTO Icd10CmPcsOrder (orderNumber, code, isHeader, shortDescription, longDescription)\n\
+    let q = "INSERT INTO Icd10CmPcsOrder (orderNumber, code, isHeader, shortDescription, longDescription)\n\
 \VALUES (?, ?, ?, ?, ?)" :: Query
     execute conn q (icd)
 
 createTable :: Connection -> IO ()
 createTable conn = do
-    let 
-        q = "CREATE TABLE IF NOT EXISTS Icd10CmPcsOrder ( \n\
+    let q = "CREATE TABLE IF NOT EXISTS Icd10CmPcsOrder ( \n\
       \id INTEGER PRIMARY KEY\n\
     \, orderNumber INTEGER NOT NULL\n\
     \, code TEXT NOT NULL\n\
@@ -39,9 +41,8 @@ createTable conn = do
 
 
 retrieve :: Connection -> Int -> IO [Icd10CmPcsOrder]
-retrieve conn id = do
-    let 
-        q = "SELECT\n\
+retrieve conn key = do
+    let q = "SELECT\n\
       \id\n\
     \, orderNumber\n\
     \, code\n\
@@ -52,13 +53,12 @@ retrieve conn id = do
 \    Icd10CmPcsOrder\n\
 \WHERE\n\
 \    id = ?" :: Query
-    r <- query conn q (Only (id)) :: IO [Icd10CmPcsOrder]
+    r <- query conn q (Only (key)) :: IO [Icd10CmPcsOrder]
     return r
 
 retrieveIfTableExists :: Connection -> IO Bool
 retrieveIfTableExists conn = do
-    let
-        q = "SELECT\n\
+    let q = "SELECT\n\
     \name\n\
 \FROM\n\
     \sqlite_schema\n\

@@ -78,5 +78,3 @@ getIcd10CodesFromFile file = do
         lines' = lines contents
         codes = parseIcd10CmOrders lines'
     return codes
-
-
