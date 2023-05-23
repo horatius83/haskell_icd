@@ -24,6 +24,9 @@ dependencies:
 - text
 - hspec >= 2.9.7
 - sqlite-simple >= 0.4.5.2
+- persistent
+- persistent-sqlite
+- persistent-template
 
 ghc-options:
 - -Wall
