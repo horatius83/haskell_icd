@@ -1,40 +1,42 @@
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE EmptyDataDecls             #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE GADTs                      #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE QuasiQuotes                #-}
+{-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE DeriveAnyClass #-}
 module Icd10Codes   
 ( Icd10CmPcsOrder(..)
 , parseIcd10CmOrder
 , parseIcd10CmOrders
 , getIcd10CodesFromFile
+, migrateAll
 ) where
 
+import           Control.Monad.IO.Class  (liftIO)
+import           Database.Persist
+import           Database.Persist.Sqlite
+import           Database.Persist.TH
 import Data.Text (Text, pack, strip)
 import Text.Read (readMaybe)
-import Database.SQLite.Simple.FromRow (FromRow(..))
-import Database.SQLite.Simple (ToRow(..), field)
-{-
-ICD-10-CM/PCS Order File Format
-Position    Length  Contents
-1           5       Order number, right justified, zero filled.
-6           1       Blank
-7           7       ICD-10-CM or ICD-10-PCS code. Dots are not included.
-14          1       Blank
-15          1       0 if the code is a “header” –not valid for HIPAA-covered transactions. 1 if the code is valid for submission for HIPAA-covered transactions.
-16          1       Blank
-17          60      Short description
-77          1       Blank
-78          To end  Long description
--}
-data Icd10CmPcsOrder = Icd10CmPcsOrder  
-    { orderNumber :: Int
-    , code :: Text
-    , isHeader :: Bool
-    , shortDescription :: Text
-    , longDescription :: Text
-    } deriving (Show, Eq)
 
-instance FromRow Icd10CmPcsOrder where
-    fromRow = Icd10CmPcsOrder <$> field <*> field <*> field <*> field <*> field
-
-instance ToRow Icd10CmPcsOrder where
-    toRow (Icd10CmPcsOrder orderNumber_ code_ isHeader_ shortDescription_ longDescription_) = toRow (orderNumber_, code_, isHeader_, shortDescription_, longDescription_)
+share [mkPersist sqlSettings, mkMigrate "migrateAll"][persistLowerCase|
+Icd10CmPcsOrder 
+    orderNumber Int
+    code Text
+    isHeader Bool
+    shortDescription Text
+    longDescription Text
+    deriving Show Eq
+|]
 
 parseIcd10CmOrder :: String -> Maybe Icd10CmPcsOrder
 parseIcd10CmOrder line = 
@@ -49,13 +51,7 @@ parseIcd10CmOrder line =
             | otherwise = True
         parsedShortDescription = substring 16 60 
         parsedLongDescription = substring 77 (length line - 77) 
-        makeIcd justOrderNumber = Icd10CmPcsOrder 
-            { orderNumber = justOrderNumber
-            , code = parse parsedCode
-            , isHeader = parsedIsHeader
-            , shortDescription = parse parsedShortDescription
-            , longDescription = parse parsedLongDescription
-            }
+        makeIcd justOrderNumber = Icd10CmPcsOrder justOrderNumber (parse parsedCode) parsedIsHeader (parse parsedShortDescription) (parse parsedLongDescription)
     in
     fmap makeIcd parsedOrderNumber
 

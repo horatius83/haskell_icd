@@ -1,18 +1,31 @@
 module Main (main) where
 
-import Database.SQLite.Simple (open, close, Connection)
-import Icd10Queries (retrieveIfTableExists, create, createTable)
-import Icd10Codes (getIcd10CodesFromFile)
+import           Control.Monad.IO.Class  (liftIO)
+import           Database.Persist
+import           Database.Persist.Sqlite
+import           Database.Persist.TH
+import Icd10Codes (getIcd10CodesFromFile, migrateAll)
 import Data.Either (isLeft, fromLeft, fromRight)
+import Data.Text (Text, pack, strip)
 
 main :: IO ()
 main = do 
     putStrLn "Opening connection..."
-    conn <- open "test.db"
-    loadDatabase conn "./data/icd10/icd10cm_order_2023.txt"
+    let
+        databasePath = pack "test.db" 
+        cmsFilePath = pack "./data/icd10/icd10cm_order_2023.txt"
+    loadDatabase databasePath cmsFilePath
     putStrLn "Closing connection."
-    close conn
 
+loadDatabase :: Text -> Text -> IO ()
+loadDatabase dbFilePath cmsDataFilePath = runSqlite dbFilePath $ do
+    runMigration migrateAll
+    -- get row count
+    -- if it is zero then 
+        -- parse values from file
+        -- insert into database
+
+{-
 loadDatabase :: Connection -> String -> IO ()
 loadDatabase conn textFileLocation = do
     haveTablesBeenCreated <- retrieveIfTableExists conn
@@ -32,4 +45,5 @@ loadDatabase conn textFileLocation = do
             mapM_ createIcd icd10Codes
             putStrLn "Values inserted"
     else putStrLn "Tables have been created"
+-}
 
