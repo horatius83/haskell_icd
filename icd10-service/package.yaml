@@ -23,10 +23,7 @@ dependencies:
 - base >= 4.7 && < 5
 - text
 - hspec >= 2.9.7
-- sqlite-simple >= 0.4.5.2
-- persistent
-- persistent-sqlite
-- persistent-template
+- HDBC
 
 ghc-options:
 - -Wall

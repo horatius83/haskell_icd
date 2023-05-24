@@ -1,18 +1,17 @@
 module Main (main) where
 
 import Data.Either (fromLeft, fromRight, isLeft)
-import Database.SQLite.Simple (Connection, close, open)
 import Icd10Codes (getIcd10CodesFromFile)
-import Icd10Queries (create, createTable, retrieveIfTableExists)
 
 main :: IO ()
 main = do
   putStrLn "Opening connection..."
-  conn <- open "test.db"
-  loadDatabase conn "./data/icd10/icd10cm_order_2023.txt"
+  -- conn <- open "test.db"
+  -- loadDatabase conn "./data/icd10/icd10cm_order_2023.txt"
   putStrLn "Closing connection."
-  close conn
+  -- close conn
 
+{-
 loadDatabase :: Connection -> String -> IO ()
 loadDatabase conn textFileLocation = do
   haveTablesBeenCreated <- retrieveIfTableExists conn
@@ -33,3 +32,4 @@ loadDatabase conn textFileLocation = do
           mapM_ createIcd icd10Codes
           putStrLn "Values inserted"
     else putStrLn "Tables have been created"
+-}

@@ -7,8 +7,6 @@ module Icd10Codes
 where
 
 import Data.Text (Text, pack, strip)
-import Database.SQLite.Simple (ToRow (..), field)
-import Database.SQLite.Simple.FromRow (FromRow (..))
 import Text.Read (readMaybe)
 
 {-
@@ -32,12 +30,6 @@ data Icd10CmPcsOrder = Icd10CmPcsOrder
     longDescription :: Text
   }
   deriving (Show, Eq)
-
-instance FromRow Icd10CmPcsOrder where
-  fromRow = Icd10CmPcsOrder <$> field <*> field <*> field <*> field <*> field
-
-instance ToRow Icd10CmPcsOrder where
-  toRow (Icd10CmPcsOrder orderNumber_ code_ isHeader_ shortDescription_ longDescription_) = toRow (orderNumber_, code_, isHeader_, shortDescription_, longDescription_)
 
 parseIcd10CmOrder :: String -> Maybe Icd10CmPcsOrder
 parseIcd10CmOrder line =
@@ -66,9 +58,9 @@ parseIcd10CmOrders textLines =
   let parse ln =
         let order = parseIcd10CmOrder ln
          in case order of
-              Just (x) -> Right x
+              Just x -> Right x
               Nothing -> Left $ "Error parsing: " ++ ln
-   in sequence $ map parse textLines
+   in mapM parse textLines
 
 getIcd10CodesFromFile :: String -> IO (Either String [Icd10CmPcsOrder])
 getIcd10CodesFromFile file = do
