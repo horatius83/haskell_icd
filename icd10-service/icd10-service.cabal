@@ -26,6 +26,7 @@ source-repository head
 library
   exposed-modules:
       Icd10Codes
+      Icd10Persistence
       Icd10Queries
       Lib
   other-modules:
