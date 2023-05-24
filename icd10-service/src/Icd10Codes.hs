@@ -1,14 +1,16 @@
-module Icd10Codes   
-( Icd10CmPcsOrder(..)
-, parseIcd10CmOrder
-, parseIcd10CmOrders
-, getIcd10CodesFromFile
-) where
+module Icd10Codes
+  ( Icd10CmPcsOrder (..),
+    parseIcd10CmOrder,
+    parseIcd10CmOrders,
+    getIcd10CodesFromFile,
+  )
+where
 
 import Data.Text (Text, pack, strip)
+import Database.SQLite.Simple (ToRow (..), field)
+import Database.SQLite.Simple.FromRow (FromRow (..))
 import Text.Read (readMaybe)
-import Database.SQLite.Simple.FromRow (FromRow(..))
-import Database.SQLite.Simple (ToRow(..), field)
+
 {-
 ICD-10-CM/PCS Order File Format
 Position    Length  Contents
@@ -22,59 +24,55 @@ Position    Length  Contents
 77          1       Blank
 78          To end  Long description
 -}
-data Icd10CmPcsOrder = Icd10CmPcsOrder  
-    { orderNumber :: Int
-    , code :: Text
-    , isHeader :: Bool
-    , shortDescription :: Text
-    , longDescription :: Text
-    } deriving (Show, Eq)
+data Icd10CmPcsOrder = Icd10CmPcsOrder
+  { orderNumber :: Int,
+    code :: Text,
+    isHeader :: Bool,
+    shortDescription :: Text,
+    longDescription :: Text
+  }
+  deriving (Show, Eq)
 
 instance FromRow Icd10CmPcsOrder where
-    fromRow = Icd10CmPcsOrder <$> field <*> field <*> field <*> field <*> field
+  fromRow = Icd10CmPcsOrder <$> field <*> field <*> field <*> field <*> field
 
 instance ToRow Icd10CmPcsOrder where
-    toRow (Icd10CmPcsOrder orderNumber_ code_ isHeader_ shortDescription_ longDescription_) = toRow (orderNumber_, code_, isHeader_, shortDescription_, longDescription_)
+  toRow (Icd10CmPcsOrder orderNumber_ code_ isHeader_ shortDescription_ longDescription_) = toRow (orderNumber_, code_, isHeader_, shortDescription_, longDescription_)
 
 parseIcd10CmOrder :: String -> Maybe Icd10CmPcsOrder
-parseIcd10CmOrder line = 
-    let
-        substring index count = take count $ drop index line
-        parsedOrderNumber = readMaybe $ substring 0 5 
-        parse = strip . pack 
-        parsedCode = substring 6 7 
-        parsedHeader = substring 14 1 
-        parsedIsHeader 
-            | parsedHeader == "0" = False
-            | otherwise = True
-        parsedShortDescription = substring 16 60 
-        parsedLongDescription = substring 77 (length line - 77) 
-        makeIcd justOrderNumber = Icd10CmPcsOrder 
-            { orderNumber = justOrderNumber
-            , code = parse parsedCode
-            , isHeader = parsedIsHeader
-            , shortDescription = parse parsedShortDescription
-            , longDescription = parse parsedLongDescription
-            }
-    in
-    fmap makeIcd parsedOrderNumber
+parseIcd10CmOrder line =
+  let substring index count = take count $ drop index line
+      parsedOrderNumber = readMaybe $ substring 0 5
+      parse = strip . pack
+      parsedCode = substring 6 7
+      parsedHeader = substring 14 1
+      parsedIsHeader
+        | parsedHeader == "0" = False
+        | otherwise = True
+      parsedShortDescription = substring 16 60
+      parsedLongDescription = substring 77 (length line - 77)
+      makeIcd justOrderNumber =
+        Icd10CmPcsOrder
+          { orderNumber = justOrderNumber,
+            code = parse parsedCode,
+            isHeader = parsedIsHeader,
+            shortDescription = parse parsedShortDescription,
+            longDescription = parse parsedLongDescription
+          }
+   in fmap makeIcd parsedOrderNumber
 
 parseIcd10CmOrders :: [String] -> Either String [Icd10CmPcsOrder]
-parseIcd10CmOrders textLines = 
-    let
-        parse ln = 
-            let 
-                order = parseIcd10CmOrder ln
-            in
-            case order of   Just (x) -> Right x
-                            Nothing -> Left $ "Error parsing: " ++ ln
-    in
-    sequence $ map parse textLines
+parseIcd10CmOrders textLines =
+  let parse ln =
+        let order = parseIcd10CmOrder ln
+         in case order of
+              Just (x) -> Right x
+              Nothing -> Left $ "Error parsing: " ++ ln
+   in sequence $ map parse textLines
 
 getIcd10CodesFromFile :: String -> IO (Either String [Icd10CmPcsOrder])
 getIcd10CodesFromFile file = do
-    contents <- readFile file
-    let
-        lines' = lines contents
-        codes = parseIcd10CmOrders lines'
-    return codes
+  contents <- readFile file
+  let lines' = lines contents
+      codes = parseIcd10CmOrders lines'
+  return codes
