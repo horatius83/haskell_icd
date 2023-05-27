@@ -22,9 +22,7 @@ module Icd10Codes
   , migrateAll
   ) where
 
-import           Control.Monad.IO.Class  (liftIO)
 import           Data.Text               (Text, pack, strip)
-import           Database.Persist
 import           Database.Persist.Sqlite
 import           Database.Persist.TH
 import           Text.Read               (readMaybe)
@@ -56,7 +54,7 @@ Position    Length  Contents
 -}
 parseIcd10CmOrder :: String -> Maybe Icd10CmPcsOrder
 parseIcd10CmOrder line =
-  let substring index count = take count $ drop index line
+  let substring index charCount = take charCount $ drop index line
       parsedOrderNumber = readMaybe $ substring 0 5
       parse = strip . pack
       parsedCode = substring 6 7

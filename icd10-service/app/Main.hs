@@ -17,7 +17,9 @@ main = do
       cmsFilePath = "./data/icd10/icd10cm_order_2023.txt"
   doesDbFileExist <- doesFileExist databasePath
   unless doesDbFileExist $ do
+    putStrLn "No database found, parsing CMS file..."
     eitherIcdCodes <- getIcd10CodesFromFile cmsFilePath
+    putStrLn "Inserting into database..."
     case eitherIcdCodes of
       Right icdCodes -> insertCodesIntoDatabase (pack databasePath) icdCodes
       Left e -> putStrLn e
