@@ -4,7 +4,7 @@ module Main
 where
 
 import Control.Monad (unless)
-import Data.Text (Text, pack)
+import qualified Data.Text as T
 import Database.Persist
 import Database.Persist.Sqlite
 import Icd10Codes (Icd10CmPcsOrder, getIcd10CodesFromFile, migrateAll)
@@ -21,13 +21,13 @@ main = do
     eitherIcdCodes <- getIcd10CodesFromFile cmsFilePath
     putStrLn "Inserting into database..."
     case eitherIcdCodes of
-      Right icdCodes -> insertCodesIntoDatabase (pack databasePath) icdCodes
+      Right icdCodes -> insertCodesIntoDatabase (T.pack databasePath) icdCodes
       Left e -> putStrLn e
     putStrLn "Database created."
-  icd10Lookup
+  icd10LookupLoop
 
-icd10Lookup :: IO ()
-icd10Lookup = do
+icd10LookupLoop :: IO ()
+icd10LookupLoop = do
   putStrLn "Enter ICD 10 code to lookup (or quit): "
   response <- getLine
   case response of
@@ -35,6 +35,12 @@ icd10Lookup = do
     _ -> do
       putStrLn $ "Looking up "++ response
       icd10Lookup
+
+-- https://stackoverflow.com/questions/11048143/example-of-persistent-with-backend-specific-operator
+icd10Lookup :: String -> String -> IO [Icd10CmPcsOrder]
+icd10Lookup databasePath lookupValue = runSqlite dbFilePath $ do
+  let icontains field val = Filter field (Left $ PersistText $ T.concat ["%", val, "%"]) (BackendSpecificFilter "ILIKE")
+  selectList [Icd10CmPcsOrderlongDescription `icontains` lookupValue] []
 
 getSourceFiles :: String -> String -> IO (String, String)
 getSourceFiles defaultDatabasePath defaultCmsFilePath = do
@@ -44,7 +50,7 @@ getSourceFiles defaultDatabasePath defaultCmsFilePath = do
     (databaseFilePath : _) -> (databaseFilePath, defaultCmsFilePath)
     _ -> (defaultDatabasePath, defaultCmsFilePath)
 
-insertCodesIntoDatabase :: Text -> [Icd10CmPcsOrder] -> IO ()
+insertCodesIntoDatabase :: T.Text -> [Icd10CmPcsOrder] -> IO ()
 insertCodesIntoDatabase dbFilePath icd10Codes = runSqlite dbFilePath $ do
   runMigration migrateAll
   insertMany_ icd10Codes
