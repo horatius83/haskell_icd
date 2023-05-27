@@ -80,7 +80,7 @@ parseIcd10CmOrders textLines =
          in case order of
               Just (x) -> Right x
               Nothing  -> Left $ "Error parsing: " ++ ln
-   in sequence $ map parse textLines
+   in mapM parse textLines
 
 getIcd10CodesFromFile :: String -> IO (Either String [Icd10CmPcsOrder])
 getIcd10CodesFromFile file = do
