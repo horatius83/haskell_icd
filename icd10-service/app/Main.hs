@@ -13,7 +13,7 @@ import System.Environment (getArgs)
 
 main :: IO ()
 main = do
-  (databasePath, cmsFilePath) <- getSourceFiles "icd10Codes.db"  "./data/icd10/icd10cm_order_2023.txt"
+  (databasePath, cmsFilePath) <- getSourceFiles "icd10Codes.db" "./data/icd10/icd10cm_order_2023.txt"
   putStrLn $ "Checking if " ++ databasePath ++ " exists..."
   doesDbFileExist <- doesFileExist databasePath
   unless doesDbFileExist $ do
@@ -24,14 +24,25 @@ main = do
       Right icdCodes -> insertCodesIntoDatabase (pack databasePath) icdCodes
       Left e -> putStrLn e
     putStrLn "Database created."
+  icd10Lookup
+
+icd10Lookup :: IO ()
+icd10Lookup = do
+  putStrLn "Enter ICD 10 code to lookup (or quit): "
+  response <- getLine
+  case response of
+    "quit" -> return ()
+    _ -> do
+      putStrLn $ "Looking up "++ response
+      icd10Lookup
 
 getSourceFiles :: String -> String -> IO (String, String)
 getSourceFiles defaultDatabasePath defaultCmsFilePath = do
-    args <- getArgs
-    return $ case args of
-        (databasePath:cmsFilePath:_) -> (databasePath, cmsFilePath)
-        (databaseFilePath:_) -> (databaseFilePath, defaultCmsFilePath)
-        _ -> (defaultDatabasePath, defaultCmsFilePath)
+  args <- getArgs
+  return $ case args of
+    (databasePath : cmsFilePath : _) -> (databasePath, cmsFilePath)
+    (databaseFilePath : _) -> (databaseFilePath, defaultCmsFilePath)
+    _ -> (defaultDatabasePath, defaultCmsFilePath)
 
 insertCodesIntoDatabase :: Text -> [Icd10CmPcsOrder] -> IO ()
 insertCodesIntoDatabase dbFilePath icd10Codes = runSqlite dbFilePath $ do
