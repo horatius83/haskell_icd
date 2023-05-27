@@ -1,44 +1,33 @@
 module Main
-  ( main
-  ) where
+  ( main,
+  )
+where
 
-import           Control.Monad.IO.Class  (liftIO)
-import           Data.Either             (fromLeft, fromRight, isLeft)
-import           Data.Text               (Text, pack, strip)
-import           Database.Persist
-import           Database.Persist.Sqlite
-import           Database.Persist.TH
-import           Icd10Codes              (getIcd10CodesFromFile, migrateAll)
+import Control.Monad (unless)
+import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Reader (ReaderT)
+import Data.Either (fromLeft, fromRight, isLeft)
+import Data.Text (Text, pack, strip, unpack)
+import Database.Persist
+import Database.Persist.Sqlite
+import Database.Persist.TH
+import Icd10Codes (Icd10CmPcsOrder, getIcd10CodesFromFile, migrateAll)
+import System.Directory (doesFileExist)
 
 main :: IO ()
 main = do
   putStrLn "Opening connection..."
-  let databasePath = pack "test2.db"
-      cmsFilePath = pack "./data/icd10/icd10cm_order_2023.txt"
-  loadDatabase databasePath cmsFilePath
+  let databasePath = "test2.db"
+      cmsFilePath = "./data/icd10/icd10cm_order_2023.txt"
+  doesDbFileExist <- doesFileExist databasePath
+  unless doesDbFileExist $ do
+    eitherIcdCodes <- getIcd10CodesFromFile cmsFilePath
+    case eitherIcdCodes of
+      Right icdCodes -> insertCodesIntoDatabase (pack databasePath) icdCodes
+      Left error -> putStrLn error
   putStrLn "Closing connection."
 
-loadDatabase :: Text -> Text -> IO ()
-loadDatabase dbFilePath cmsDataFilePath =
-  runSqlite dbFilePath $ do 
-    runMigration migrateAll
-    count <- rawQuery "select count(1) from Icd10CmPcsOrder" []
-    if count == 0 then do
-        let insertIcd10Codes icd10Codes = do 
-                putStrLn "Inserting codes into the database..."
-                let icd10Codes = fromRight [] eitherIcd10Codes
-                insertMany $ icd10Codes 
-                putStrLn "Finished inserts."
-        eitherIcd10Codes <- getIcd10CodesFromFile textFileLocation
-        insertResults <- insertIcd10Codes <$> eitherIcd10Codes
-
-        if isLeft eitherIcd10Codes then do 
-            putStrLn (fromLeft "" eitherIcd10Codes)
-        else do
-            putStrLn "Inserting codes into the database..."
-            let icd10Codes = fromRight [] eitherIcd10Codes
-            insertMany $ icd10Codes 
-            putStrLn "Finished inserts."
-    else
-        putStrLn "Else"
-    putStrLn "Done"
+insertCodesIntoDatabase :: Text -> [Icd10CmPcsOrder] -> IO ()
+insertCodesIntoDatabase dbFilePath icd10Codes = runSqlite dbFilePath $ do
+  runMigration migrateAll
+  insertMany_ icd10Codes

@@ -26,6 +26,8 @@ dependencies:
 - persistent
 - persistent-sqlite
 - persistent-template
+- directory
+- mtl
 
 ghc-options:
 - -Wall

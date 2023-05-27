@@ -34,7 +34,9 @@ library
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       base >=4.7 && <5
+    , directory
     , hspec >=2.9.7
+    , mtl
     , persistent
     , persistent-sqlite
     , persistent-template
@@ -50,8 +52,10 @@ executable icd10-service-exe
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , directory
     , hspec >=2.9.7
     , icd10-service
+    , mtl
     , persistent
     , persistent-sqlite
     , persistent-template
@@ -69,8 +73,10 @@ test-suite icd10-service-test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , directory
     , hspec >=2.9.7
     , icd10-service
+    , mtl
     , persistent
     , persistent-sqlite
     , persistent-template
