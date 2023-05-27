@@ -4,13 +4,9 @@ module Main
 where
 
 import Control.Monad (unless)
-import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.Reader (ReaderT)
-import Data.Either (fromLeft, fromRight, isLeft)
-import Data.Text (Text, pack, strip, unpack)
+import Data.Text (Text, pack)
 import Database.Persist
 import Database.Persist.Sqlite
-import Database.Persist.TH
 import Icd10Codes (Icd10CmPcsOrder, getIcd10CodesFromFile, migrateAll)
 import System.Directory (doesFileExist)
 
@@ -24,7 +20,7 @@ main = do
     eitherIcdCodes <- getIcd10CodesFromFile cmsFilePath
     case eitherIcdCodes of
       Right icdCodes -> insertCodesIntoDatabase (pack databasePath) icdCodes
-      Left error -> putStrLn error
+      Left e -> putStrLn e
   putStrLn "Closing connection."
 
 insertCodesIntoDatabase :: Text -> [Icd10CmPcsOrder] -> IO ()

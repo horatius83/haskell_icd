@@ -36,7 +36,6 @@ library
       base >=4.7 && <5
     , directory
     , hspec >=2.9.7
-    , mtl
     , persistent
     , persistent-sqlite
     , persistent-template
@@ -55,7 +54,6 @@ executable icd10-service-exe
     , directory
     , hspec >=2.9.7
     , icd10-service
-    , mtl
     , persistent
     , persistent-sqlite
     , persistent-template
@@ -76,7 +74,6 @@ test-suite icd10-service-test
     , directory
     , hspec >=2.9.7
     , icd10-service
-    , mtl
     , persistent
     , persistent-sqlite
     , persistent-template
