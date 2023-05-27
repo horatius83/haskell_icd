@@ -1,13 +1,43 @@
-module Icd10Codes
-  ( Icd10CmPcsOrder (..),
-    parseIcd10CmOrder,
-    parseIcd10CmOrders,
-    getIcd10CodesFromFile,
-  )
-where
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE DeriveAnyClass             #-}
+{-# LANGUAGE DerivingStrategies         #-}
+{-# LANGUAGE EmptyDataDecls             #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE GADTs                      #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE QuasiQuotes                #-}
+{-# LANGUAGE StandaloneDeriving         #-}
+{-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE UndecidableInstances       #-}
 
-import Data.Text (Text, pack, strip)
-import Text.Read (readMaybe)
+module Icd10Codes
+  ( Icd10CmPcsOrder(..)
+  , parseIcd10CmOrder
+  , parseIcd10CmOrders
+  , getIcd10CodesFromFile
+  , migrateAll
+  ) where
+
+import           Data.Text               (Text, pack, strip)
+import           Database.Persist.Sqlite
+import           Database.Persist.TH
+import           Text.Read               (readMaybe)
+
+share
+  [mkPersist sqlSettings, mkMigrate "migrateAll"]
+  [persistLowerCase|
+Icd10CmPcsOrder
+    orderNumber Int
+    code Text
+    isHeader Bool
+    shortDescription Text
+    longDescription Text
+    deriving Show Eq
+|]
 
 {-
 ICD-10-CM/PCS Order File Format
@@ -22,18 +52,9 @@ Position    Length  Contents
 77          1       Blank
 78          To end  Long description
 -}
-data Icd10CmPcsOrder = Icd10CmPcsOrder
-  { orderNumber :: Int,
-    code :: Text,
-    isHeader :: Bool,
-    shortDescription :: Text,
-    longDescription :: Text
-  }
-  deriving (Show, Eq)
-
 parseIcd10CmOrder :: String -> Maybe Icd10CmPcsOrder
 parseIcd10CmOrder line =
-  let substring index count = take count $ drop index line
+  let substring index charCount = take charCount $ drop index line
       parsedOrderNumber = readMaybe $ substring 0 5
       parse = strip . pack
       parsedCode = substring 6 7
@@ -45,12 +66,11 @@ parseIcd10CmOrder line =
       parsedLongDescription = substring 77 (length line - 77)
       makeIcd justOrderNumber =
         Icd10CmPcsOrder
-          { orderNumber = justOrderNumber,
-            code = parse parsedCode,
-            isHeader = parsedIsHeader,
-            shortDescription = parse parsedShortDescription,
-            longDescription = parse parsedLongDescription
-          }
+          justOrderNumber
+          (parse parsedCode)
+          parsedIsHeader
+          (parse parsedShortDescription)
+          (parse parsedLongDescription)
    in fmap makeIcd parsedOrderNumber
 
 parseIcd10CmOrders :: [String] -> Either String [Icd10CmPcsOrder]
@@ -58,9 +78,9 @@ parseIcd10CmOrders textLines =
   let parse ln =
         let order = parseIcd10CmOrder ln
          in case order of
-              Just x -> Right x
-              Nothing -> Left $ "Error parsing: " ++ ln
-   in mapM parse textLines
+              Just (x) -> Right x
+              Nothing  -> Left $ "Error parsing: " ++ ln
+   in sequence $ map parse textLines
 
 getIcd10CodesFromFile :: String -> IO (Either String [Icd10CmPcsOrder])
 getIcd10CodesFromFile file = do

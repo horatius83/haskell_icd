@@ -1,35 +1,31 @@
-module Main (main) where
+module Main
+  ( main,
+  )
+where
 
-import Data.Either (fromLeft, fromRight, isLeft)
-import Icd10Codes (getIcd10CodesFromFile)
+import Control.Monad (unless)
+import Data.Text (Text, pack)
+import Database.Persist
+import Database.Persist.Sqlite
+import Icd10Codes (Icd10CmPcsOrder, getIcd10CodesFromFile, migrateAll)
+import System.Directory (doesFileExist)
 
 main :: IO ()
 main = do
   putStrLn "Opening connection..."
-  -- conn <- open "test.db"
-  -- loadDatabase conn "./data/icd10/icd10cm_order_2023.txt"
+  let databasePath = "test2.db"
+      cmsFilePath = "./data/icd10/icd10cm_order_2023.txt"
+  doesDbFileExist <- doesFileExist databasePath
+  unless doesDbFileExist $ do
+    putStrLn "No database found, parsing CMS file..."
+    eitherIcdCodes <- getIcd10CodesFromFile cmsFilePath
+    putStrLn "Inserting into database..."
+    case eitherIcdCodes of
+      Right icdCodes -> insertCodesIntoDatabase (pack databasePath) icdCodes
+      Left e -> putStrLn e
   putStrLn "Closing connection."
-  -- close conn
 
-{-
-loadDatabase :: Connection -> String -> IO ()
-loadDatabase conn textFileLocation = do
-  haveTablesBeenCreated <- retrieveIfTableExists conn
-  if not haveTablesBeenCreated
-    then do
-      putStrLn $ "Tables have not been created, reading codes from " ++ textFileLocation
-      eitherIcd10Codes <- getIcd10CodesFromFile textFileLocation
-      if isLeft eitherIcd10Codes
-        then putStrLn (fromLeft "" eitherIcd10Codes)
-        else do
-          let icd10Codes = fromRight [] eitherIcd10Codes
-              nIcd10Codes = show $ length icd10Codes
-              createIcd = create conn
-          putStrLn $ nIcd10Codes ++ " codes found."
-          putStrLn "Creating table"
-          createTable conn
-          putStrLn "Inserting values"
-          mapM_ createIcd icd10Codes
-          putStrLn "Values inserted"
-    else putStrLn "Tables have been created"
--}
+insertCodesIntoDatabase :: Text -> [Icd10CmPcsOrder] -> IO ()
+insertCodesIntoDatabase dbFilePath icd10Codes = runSqlite dbFilePath $ do
+  runMigration migrateAll
+  insertMany_ icd10Codes

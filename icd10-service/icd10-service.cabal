@@ -32,9 +32,12 @@ library
       src
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
-      HDBC
-    , base >=4.7 && <5
+      base >=4.7 && <5
+    , directory
     , hspec >=2.9.7
+    , persistent
+    , persistent-sqlite
+    , persistent-template
     , text
   default-language: Haskell2010
 
@@ -46,10 +49,13 @@ executable icd10-service-exe
       app
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      HDBC
-    , base >=4.7 && <5
+      base >=4.7 && <5
+    , directory
     , hspec >=2.9.7
     , icd10-service
+    , persistent
+    , persistent-sqlite
+    , persistent-template
     , text
   default-language: Haskell2010
 
@@ -63,9 +69,12 @@ test-suite icd10-service-test
       test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      HDBC
-    , base >=4.7 && <5
+      base >=4.7 && <5
+    , directory
     , hspec >=2.9.7
     , icd10-service
+    , persistent
+    , persistent-sqlite
+    , persistent-template
     , text
   default-language: Haskell2010
