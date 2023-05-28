@@ -20,6 +20,7 @@ module Icd10Codes
   , parseIcd10CmOrders
   , getIcd10CodesFromFile
   , migrateAll
+  , EntityField(..)
   ) where
 
 import           Data.Text               (Text, pack, strip)
