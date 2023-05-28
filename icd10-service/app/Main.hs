@@ -43,13 +43,22 @@ icd10LookupLoop dbPath = do
     _ -> do
       putStrLn $ "Looking up "++ response
       results <- icd10Lookup dbPath $ T.pack response
-      mapM_ print results
+      mapM_ showEntity results
       icd10LookupLoop dbPath
+
+showEntity :: Entity Icd10CmPcsOrder -> IO ()
+showEntity e = do
+    let
+        v = entityVal e
+        code = icd10CmPcsOrderCode v
+        description = icd10CmPcsOrderLongDescription v
+        formatted = T.concat [code, " ", description]
+    print formatted
 
 -- https://stackoverflow.com/questions/11048143/example-of-persistent-with-backend-specific-operator
 icd10Lookup :: T.Text -> T.Text -> IO [Entity Icd10CmPcsOrder]
 icd10Lookup databasePath lookupValue = runSqlite databasePath $ do
-  let 
+  let
     searchText = T.concat ["%", lookupValue, "%"]
     fv = FilterValue searchText
   selectList [Filter Icd10CmPcsOrderLongDescription fv (BackendSpecificFilter "like")] []
