@@ -37,24 +37,16 @@ icd10LookupLoop dbPath = do
     _ -> do
       putStrLn $ "Looking up "++ response
       results <- icd10Lookup dbPath $ T.pack response
-      --mapM_ (putStrLn . T.unpack . icd10CmPcsOrderLongDescription) results
       mapM_ print results
+      icd10LookupLoop dbPath
 
 -- https://stackoverflow.com/questions/11048143/example-of-persistent-with-backend-specific-operator
 icd10Lookup :: T.Text -> T.Text -> IO [Entity Icd10CmPcsOrder]
 icd10Lookup databasePath lookupValue = runSqlite databasePath $ do
-  {-
-  let icontains :: EntityField r T.Text -> T.Text -> Filter r
-      icontains field val = Filter field (FilterValue $ T.concat ["%", val, "%"]) (BackendSpecificFilter "ilike")
-  -- let like field val = Filter field (Left $ T.concat ["%", val, "%"]) (BackendSpecificFilter "like")
-  -- let icontains field val = Filter field (Left $ T.concat ["%", val, "%"]) (BackendSpecificFilter "ILIKE")
-  -- Filter field (Left $ T.concat ["%", val, "%"])
-  selectList [Icd10CmPcsOrderLongDescription `icontains` lookupValue] []
-  -}
   let 
     searchText = T.concat ["%", lookupValue, "%"]
-    filterValue = FilterValue searchText
-  selectList [Filter Icd10CmPcsOrderLongDescription filterValue (BackendSpecificFilter "like")] []
+    fv = FilterValue searchText
+  selectList [Filter Icd10CmPcsOrderLongDescription fv (BackendSpecificFilter "like")] []
 
 getSourceFiles :: String -> String -> IO (String, String)
 getSourceFiles defaultDatabasePath defaultCmsFilePath = do
