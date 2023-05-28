@@ -13,6 +13,8 @@ import Icd10Codes (Icd10CmPcsOrder(..), getIcd10CodesFromFile, migrateAll, Entit
 import System.Directory (doesFileExist)
 import System.Environment (getArgs)
 
+{- | Request a value from the user and lookup all ICD-10 codes that might be related
+-}
 main :: IO ()
 main = do
   (databasePath, cmsFilePath) <- getSourceFiles "icd10Codes.db" "./data/icd10/icd10cm_order_2023.txt"
@@ -28,6 +30,10 @@ main = do
     putStrLn "Database created."
   icd10LookupLoop $ T.pack databasePath
 
+{- | Request a word or phrase to look up or 'quit'
+If the value is not 'quit', look up the value in the database, then request another value
+If the value is 'quit' then terminate program
+-}
 icd10LookupLoop :: T.Text -> IO ()
 icd10LookupLoop dbPath = do
   putStrLn "Enter ICD 10 code to lookup (or quit): "
